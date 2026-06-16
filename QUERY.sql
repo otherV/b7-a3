@@ -14,50 +14,76 @@ DROP TABLE IF EXISTS Users;
 -- 1. CREATE USERS TABLE
 -- =========================================================================
 CREATE TABLE Users (
-    user_id TYPE,
-    full_name TYPE,
-    email TYPE,
-    role TYPE,
-    phone_number TYPE,
-    
-    -- Write your constraint to make 'user_id' the Primary Key
-    -- Write your constraint to ensure 'email' values are never duplicated
-    -- Write your check constraint to restrict 'role' to specific allowed strings
+    user_id      INT             NOT NULL,
+    full_name    VARCHAR(100)    NOT NULL,
+    email        VARCHAR(150)    NOT NULL,
+    role         VARCHAR(50)     NOT NULL,
+    phone_number VARCHAR(20),
+
+    -- Primary Key constraint on user_id
+    CONSTRAINT pk_users PRIMARY KEY (user_id),
+
+    -- Email must be unique across all users
+    CONSTRAINT uq_users_email UNIQUE (email),
+
+    -- Role is restricted to exactly two allowed values
+    CONSTRAINT chk_users_role CHECK (role IN ('Ticket Manager', 'Football Fan'))
 );
 
 -- =========================================================================
 -- 2. CREATE MATCHES TABLE
 -- =========================================================================
 CREATE TABLE Matches (
-    match_id TYPE,
-    fixture TYPE,
-    tournament_category TYPE,
-    base_ticket_price TYPE,
-    match_status TYPE,
-    
-    -- Write your constraint to make 'match_id' the Primary Key
-    -- Write your check constraint to prevent negative ticket prices
-    -- Write your check constraint to restrict 'match_status' values
+    match_id             INT             NOT NULL,
+    fixture              VARCHAR(150)    NOT NULL,
+    tournament_category  VARCHAR(100)    NOT NULL,
+    base_ticket_price    NUMERIC(10, 2)  NOT NULL,
+    match_status         VARCHAR(50)     NOT NULL,
+
+    -- Primary Key constraint on match_id
+    CONSTRAINT pk_matches PRIMARY KEY (match_id),
+
+    -- Ticket price must be zero or positive (no negative prices)
+    CONSTRAINT chk_matches_price CHECK (base_ticket_price >= 0),
+
+    -- match_status is restricted to four allowed operational states
+    CONSTRAINT chk_matches_status CHECK (
+        match_status IN ('Available', 'Selling Fast', 'Sold Out', 'Postponed')
+    )
 );
 
 -- =========================================================================
 -- 3. CREATE BOOKINGS TABLE
 -- =========================================================================
 CREATE TABLE Bookings (
-    booking_id TYPE,
-    user_id TYPE,
-    match_id TYPE,
-    seat_number TYPE,
-    payment_status TYPE,
-    total_cost TYPE,
-    
-    -- Write your constraint to make 'booking_id' the Primary Key
-    -- Write your Foreign Key constraint linking 'user_id' to the Users table
-    -- Write your Foreign Key constraint linking 'match_id' to the Matches table
-    -- Write your check constraint to ensure 'total_cost' is non-negative
-    -- Write your check constraint to restrict 'payment_status' values
-);
+    booking_id     INT             NOT NULL,
+    user_id        INT,
+    match_id       INT,
+    seat_number    VARCHAR(20),
+    payment_status VARCHAR(50),
+    total_cost     NUMERIC(10, 2)  NOT NULL,
 
+    -- Primary Key constraint on booking_id
+    CONSTRAINT pk_bookings PRIMARY KEY (booking_id),
+
+    -- Foreign Key: links each booking to a valid user
+    CONSTRAINT fk_bookings_user
+        FOREIGN KEY (user_id) REFERENCES Users (user_id)
+        ON DELETE SET NULL ON UPDATE CASCADE,
+
+    -- Foreign Key: links each booking to a valid match
+    CONSTRAINT fk_bookings_match
+        FOREIGN KEY (match_id) REFERENCES Matches (match_id)
+        ON DELETE SET NULL ON UPDATE CASCADE,
+
+    -- Total cost must be zero or positive
+    CONSTRAINT chk_bookings_cost CHECK (total_cost >= 0),
+
+    -- payment_status is restricted to four allowed financial states
+    CONSTRAINT chk_bookings_payment CHECK (
+        payment_status IN ('Pending', 'Confirmed', 'Cancelled', 'Refunded')
+    )
+);
 
 -- =========================================================================
 -- DATA SEEDING: INSERT SAMPLE DATA INTO USERS
